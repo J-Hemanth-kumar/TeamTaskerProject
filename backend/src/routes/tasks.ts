@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { authenticateJWT, authorizeRoles } from '../middleware/auth';
-import { Task } from '../models';
+import { Task } from '../models/Task';
 
 const router = Router();
 

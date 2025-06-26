@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
-import { User, Role } from '../models';
+import { User } from '../models/User';
+import { Role } from '../models/Role';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 

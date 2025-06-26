@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { authenticateJWT, authorizeRoles } from '../middleware/auth';
-import { Comment } from '../models';
+import { Comment } from '../models/Comment';
 
 const router = Router();
 

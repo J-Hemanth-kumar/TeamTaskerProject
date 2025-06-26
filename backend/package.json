@@ -2,9 +2,11 @@
   "name": "backend",
   "version": "1.0.0",
   "description": "This is the backend for the Team Tasker platform, a full-stack web-based task management system for small teams.",
-  "main": "index.js",
+  "main": "index.ts",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "start": "tsc && node dist/index.js"
   },
   "keywords": [],
   "author": "",
