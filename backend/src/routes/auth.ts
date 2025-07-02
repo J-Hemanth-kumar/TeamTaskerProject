@@ -3,6 +3,7 @@ import { User } from '../models/User';
 import { Role } from '../models/Role';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { authenticateJWT, authorizeRoles } from '../middleware/auth';
 
 const router = Router();
 
@@ -28,6 +29,21 @@ router.post('/login', async (req: Request, res: Response) => {
   const role = await Role.findByPk(user.roleId);
   const token = jwt.sign({ id: user.id, role: role?.name }, process.env.JWT_SECRET as string, { expiresIn: '1d' });
   res.json({ token, user: { id: user.id, email: user.email, name: user.name, role: role?.name } });
+});
+
+// Admin creates a user with any role
+router.post('/admin/create-user', authenticateJWT, authorizeRoles(['Admin']), async (req: Request, res: Response) => {
+  const { email, password, name, roleId } = req.body;
+  if (!email || !password || !name || !roleId) {
+    return res.status(400).json({ error: 'All fields are required' });
+  }
+  try {
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const user = await User.create({ email, password: hashedPassword, name, roleId });
+    res.status(201).json(user);
+  } catch (err) {
+    res.status(400).json({ error: 'User creation failed', details: err });
+  }
 });
 
 export default router;

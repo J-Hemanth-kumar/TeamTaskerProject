@@ -19,10 +19,10 @@ export function authenticateJWT(req: AuthRequest, res: Response, next: NextFunct
   }
 }
 
-export function authorizeRoles(roles: string[]) {
+export const authorizeRoles = (roles: string[]) => {
   return (req: AuthRequest, res: Response, next: NextFunction) => {
     if (!req.user || !roles.includes(req.user.role)) {
-      return res.sendStatus(403);
+      return res.status(403).json({ error: 'Forbidden' });
     }
     next();
   };

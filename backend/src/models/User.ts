@@ -3,7 +3,7 @@ import { Role } from './Role';
 import { Task } from './Task';
 import { Comment } from './Comment';
 
-@Table({ tableName: 'users' })
+@Table({ tableName: 'Users' })
 export class User extends Model<User> {
   @Column({ type: DataType.STRING, allowNull: false, unique: true })
   email!: string;
@@ -19,7 +19,7 @@ export class User extends Model<User> {
   roleId!: number;
 
   @BelongsTo(() => Role)
-  role?: Role;
+  Role?: Role;
 
   @HasMany(() => Task, 'assigneeId')
   tasks?: Task[];

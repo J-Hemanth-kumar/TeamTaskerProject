@@ -1,7 +1,7 @@
 import { Table, Column, Model, DataType, HasMany } from 'sequelize-typescript';
 import { Task } from './Task';
 
-@Table({ tableName: 'projects' })
+@Table({ tableName: 'Projects' })
 export class Project extends Model<Project> {
   @Column({ type: DataType.STRING, allowNull: false })
   name!: string;

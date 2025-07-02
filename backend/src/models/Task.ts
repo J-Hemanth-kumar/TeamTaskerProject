@@ -2,7 +2,7 @@ import { Table, Column, Model, DataType, ForeignKey, BelongsTo, CreatedAt, Updat
 import { User } from './User';
 import { Project } from './Project';
 
-@Table({ tableName: 'tasks' })
+@Table({ tableName: 'Tasks' })
 export class Task extends Model<Task> {
   @Column({
     type: DataType.STRING,

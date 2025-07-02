@@ -2,7 +2,7 @@ import { Table, Column, Model, DataType, ForeignKey, BelongsTo } from 'sequelize
 import { User } from './User';
 import { Task } from './Task';
 
-@Table({ tableName: 'comments' })
+@Table({ tableName: 'Comments' })
 export class Comment extends Model<Comment> {
   @Column({ type: DataType.TEXT, allowNull: false })
   content!: string;

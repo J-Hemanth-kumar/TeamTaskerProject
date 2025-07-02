@@ -8,6 +8,7 @@ import authRoutes from './routes/auth';
 import taskRoutes from './routes/tasks';
 import projectRoutes from './routes/projects';
 import commentRoutes from './routes/comments';
+import userRoutes from './routes/users';
 import { registerSocketHandlers } from './sockets';
 
 dotenv.config();
@@ -27,6 +28,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/comments', commentRoutes);
+app.use('/api/users', userRoutes);
 registerSocketHandlers(io);
 
 const sequelize = new Sequelize({
