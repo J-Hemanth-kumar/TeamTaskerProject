@@ -31,14 +31,14 @@ export default function ProjectCreateForm({ onProjectCreated }: { onProjectCreat
         placeholder="Project Name"
         value={name}
         onChange={e => setName(e.target.value)}
-        className="mb-3 w-full px-3 py-2 border rounded"
+        className="mb-3 w-full px-3 py-2 border rounded text-black"
         required
       />
       <textarea
         placeholder="Description"
         value={description}
         onChange={e => setDescription(e.target.value)}
-        className="mb-3 w-full px-3 py-2 border rounded"
+        className="mb-3 w-full px-3 py-2 border rounded text-black"
       />
       {error && <div className="text-red-500 mb-2">{error}</div>}
       <button

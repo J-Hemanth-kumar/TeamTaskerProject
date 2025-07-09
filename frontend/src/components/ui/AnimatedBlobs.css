@@ -1,0 +1,55 @@
+/* Animated SVG blobs for dashboard background */
+.animated-blobs-bg {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.animated-blobs-bg svg {
+  position: absolute;
+  width: 60vw;
+  height: 60vw;
+  min-width: 600px;
+  min-height: 600px;
+  opacity: 0.35;
+  filter: blur(8px);
+  animation: blobMove 18s ease-in-out infinite alternate;
+}
+
+.animated-blobs-bg .blob1 {
+  left: -10vw;
+  top: -10vw;
+  fill: #60a5fa;
+  animation-delay: 0s;
+}
+.animated-blobs-bg .blob2 {
+  right: -12vw;
+  top: 10vh;
+  fill: #f472b6;
+  animation-delay: 4s;
+}
+.animated-blobs-bg .blob3 {
+  left: 20vw;
+  bottom: -15vw;
+  fill: #34d399;
+  animation-delay: 8s;
+}
+
+@keyframes blobMove {
+  0% {
+    transform: scale(1) translateY(0px) translateX(0px);
+  }
+  33% {
+    transform: scale(1.1) translateY(-30px) translateX(40px);
+  }
+  66% {
+    transform: scale(0.95) translateY(40px) translateX(-30px);
+  }
+  100% {
+    transform: scale(1) translateY(0px) translateX(0px);
+  }
+}

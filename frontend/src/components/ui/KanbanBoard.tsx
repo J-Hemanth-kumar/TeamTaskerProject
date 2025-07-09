@@ -19,8 +19,9 @@ const profileColors = [
 
 export default function KanbanBoard({ tasks, onTaskCreated }: { tasks: any[], onTaskCreated?: () => void }) {
   const role = useUserRole();
-  const canCreate = role === 'Admin' || role === 'Project Manager';
+  const canCreate = true; // Allow all users to create tasks
   const canEdit = role === 'Admin' || role === 'Project Manager' || role === 'Developer';
+  console.log('KanbanBoard role:', role, 'canEdit:', canEdit);
   const [showModal, setShowModal] = useState(false);
   const [editTask, setEditTask] = useState<any>(null);
   const [localTasks, setLocalTasks] = useState(tasks);
@@ -51,13 +52,18 @@ export default function KanbanBoard({ tasks, onTaskCreated }: { tasks: any[], on
     }
   };
 
-  const handleEdit = async (task: any) => {
+  const handleEdit = async (task: any, optimistic?: boolean) => {
+    // Optimistic update: update localTasks immediately if requested
+    if (optimistic) {
+      setLocalTasks(prev => prev.map(t => t.id === task.id ? { ...t, ...task } : t));
+    }
     try {
       await api.put(`/tasks/${task.id}`, task);
       setEditTask(null);
-      if (onTaskCreated) onTaskCreated();
+      // Don't call onTaskCreated for drag/drop, let socket update handle it
     } catch (err) {
       alert('Failed to update task');
+      // Optionally: revert optimistic update here
     }
   };
 
@@ -77,37 +83,45 @@ export default function KanbanBoard({ tasks, onTaskCreated }: { tasks: any[], on
     const newStatus = result.destination.droppableId;
     const task = localTasks.find(t => t.id.toString() === taskId);
     if (task && task.status !== newStatus) {
-      await handleEdit({ ...task, status: newStatus });
+      // Optimistically update UI
+      await handleEdit({ ...task, status: newStatus }, true);
     }
   };
 
   return (
-    <div>
+    <div className="w-full h-[calc(100vh-64px)] flex flex-col overflow-hidden">
+      {/* Spacer for gap between Navbar and KanbanBoard */}
+      <div className="h-3 sm:h-4" />
       {/* Header Row: Kanban Board, + Add Task, Project Dropdown */}
-      <div className="bg-white/60 backdrop-blur-md shadow-lg rounded-xl border border-gray-200 p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 mx-4">
-        <h1 className="text-2xl font-bold text-gray-800 whitespace-nowrap">Kanban Board</h1>
-        <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
+      <div className="relative z-20 bg-white/90 backdrop-blur-lg shadow-2xl rounded-2xl border border-gray-200 px-4 py-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4 mx-2">
+        <h1 className="text-xl font-bold text-gray-800 whitespace-nowrap drop-shadow">Kanban Board</h1>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-1 w-full sm:w-auto">
           {canCreate && (
             <button
-              className="bg-green-600 text-white px-5 py-2 rounded-lg font-semibold shadow hover:bg-green-700 transition mb-2 sm:mb-0"
+              className="bg-green-600 text-white px-4 py-1.5 rounded-lg font-semibold shadow hover:bg-green-700 transition mb-1 sm:mb-0"
               onClick={() => setShowModal(true)}
             >
               + Add Task
             </button>
           )}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             <label className="font-semibold text-gray-700" htmlFor="project-select">Project:</label>
-            <select
-              id="project-select"
-              value={selectedProject}
-              onChange={e => setSelectedProject(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-green-400 bg-white min-w-[140px]"
-            >
-              <option value="">All Projects</option>
-              {projects.map((project: any) => (
-                <option key={project.id} value={project.id}>{project.name}</option>
-              ))}
-            </select>
+            <div className="relative">
+              <select
+                id="project-select"
+                value={selectedProject}
+                onChange={e => setSelectedProject(e.target.value)}
+                className="appearance-none px-3 py-1.5 border border-green-400 rounded-lg shadow focus:outline-none focus:ring-2 focus:ring-green-400 bg-white min-w-[130px] text-gray-800 font-medium transition-all duration-150 hover:border-green-500 hover:bg-green-50 pr-8"
+              >
+                <option value="">All Projects</option>
+                {projects.map((project: any) => (
+                  <option key={project.id} value={project.id}>{project.name}</option>
+                ))}
+              </select>
+              <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-green-500">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+              </span>
+            </div>
           </div>
         </div>
       </div>
@@ -118,14 +132,14 @@ export default function KanbanBoard({ tasks, onTaskCreated }: { tasks: any[], on
         <TaskModal open={!!editTask} onClose={() => setEditTask(null)} onCreate={handleEdit} {...editTask} />
       )}
       <DragDropContext onDragEnd={onDragEnd}>
-        <div className="flex gap-4 p-4 overflow-x-auto">
+        <div className="flex gap-6 p-4 flex-1 min-h-0 w-full items-stretch">
           {columns.map(col => (
             <Droppable droppableId={col.id} key={col.id}>
               {(provided) => (
                 <div
                   ref={provided.innerRef}
                   {...provided.droppableProps}
-                  className={`rounded-xl w-80 min-h-[400px] flex flex-col border-2 ${col.gradient} ${col.shadow} metallic-bg`}
+                  className={`rounded-xl flex-1 h-full flex flex-col border-2 ${col.gradient} ${col.shadow} metallic-bg`}
                   style={{
                     backgroundBlendMode: 'overlay',
                     borderRadius: '1rem',
@@ -133,6 +147,7 @@ export default function KanbanBoard({ tasks, onTaskCreated }: { tasks: any[], on
                     borderStyle: 'solid',
                     overflow: 'hidden',
                     position: 'relative',
+                    minWidth: '0',
                   }}
                 >
                   <h3 className="p-4 font-bold text-lg border-b-2 border-opacity-40 tracking-wide drop-shadow-sm" style={{textShadow: '0 1px 2px rgba(0,0,0,0.08)'}}>
@@ -141,49 +156,53 @@ export default function KanbanBoard({ tasks, onTaskCreated }: { tasks: any[], on
                       : 'All Projects'}
                     {' - '}{col.title}
                   </h3>
-                  <div className="flex-1 p-2 space-y-2">
+                  <div className="flex-1 p-2 space-y-2 min-h-0 overflow-y-auto">
                     {localTasks
                       .filter(t => t.status === col.id && (!selectedProject || t.projectId?.toString() === selectedProject))
                       .map((task, idx) => (
                         <Draggable draggableId={task.id.toString()} index={idx} key={task.id}>
                           {(provided) => (
-                            <div ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps} className="bg-white p-4 rounded shadow hover:shadow-lg transition flex flex-col">
+                            <div ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps} className="relative bg-white p-4 rounded shadow hover:shadow-lg transition flex flex-col pb-10">
                               <div className="font-semibold text-base">{task.title}</div>
                               <div className="text-xs text-gray-500 mb-1">
                                 {projects.find((p: any) => p.id === task.projectId)?.name || 'Project'}
                               </div>
                               <div className="text-sm text-gray-700 mb-2">{task.description}</div>
                               <div className="text-xs text-gray-400 mt-2">Due: {task.deadline ? new Date(task.deadline).toLocaleDateString() : 'N/A'}</div>
+                              {/* Profile icons for developer/tester, now in a flex row, not absolute */}
                               {(task.developerId || task.testerId) && (
-                                <div className="absolute bottom-2 left-2 flex gap-2">
+                                <div className="flex gap-2 mt-3 mb-2">
                                   {task.developerId && (
-                                    <div className={`relative group w-8 h-8 rounded-full flex items-center justify-center shadow ${profileColors[task.developerId % profileColors.length]}`}
-                                      title="Developer">
-                                      <span className="text-white font-bold">D</span>
-                                      <span className="absolute left-10 top-1/2 -translate-y-1/2 bg-gray-800 text-white text-xs rounded px-2 py-1 opacity-0 group-hover:opacity-100 transition pointer-events-none z-50">
-                                        {users?.find((u: any) => u.id === task.developerId)?.name || 'Developer'}
-                                      </span>
+                                    <div className="flex items-center bg-blue-50 rounded-full px-3 py-1 shadow text-sm font-medium border border-blue-200">
+                                      <span className="w-2 h-2 rounded-full bg-cyan-500 mr-2 inline-block"></span>
+                                      <span className="text-cyan-900">{users?.find((u: any) => u.id === task.developerId)?.name || 'Developer'}</span>
                                     </div>
                                   )}
                                   {task.testerId && (
-                                    <div className={`relative group w-8 h-8 rounded-full flex items-center justify-center shadow ${profileColors[task.testerId % profileColors.length]}`}
-                                      title="Tester">
-                                      <span className="text-white font-bold">T</span>
-                                      <span className="absolute left-10 top-1/2 -translate-y-1/2 bg-gray-800 text-white text-xs rounded px-2 py-1 opacity-0 group-hover:opacity-100 transition pointer-events-none z-50">
-                                        {users?.find((u: any) => u.id === task.testerId)?.name || 'Tester'}
-                                      </span>
+                                    <div className="flex items-center bg-orange-50 rounded-full px-3 py-1 shadow text-sm font-medium border border-orange-200">
+                                      <span className="w-2 h-2 rounded-full bg-orange-500 mr-2 inline-block"></span>
+                                      <span className="text-orange-900">{users?.find((u: any) => u.id === task.testerId)?.name || 'Tester'}</span>
                                     </div>
                                   )}
                                 </div>
                               )}
                               {canEdit && (
-                                <button
-                                  className="mt-2 text-red-600 hover:text-red-800 self-end"
-                                  title="Delete Task"
-                                  onClick={() => handleDelete(task.id)}
-                                >
-                                  <FaRegTrashAlt />
-                                </button>
+                                <div className="flex justify-between mt-2">
+                                  <button
+                                    className="text-blue-600 hover:text-blue-800"
+                                    title="Edit Task"
+                                    onClick={() => setEditTask(task)}
+                                  >
+                                    Edit
+                                  </button>
+                                  <button
+                                    className="text-red-600 hover:text-red-800"
+                                    title="Delete Task"
+                                    onClick={() => handleDelete(task.id)}
+                                  >
+                                    <FaRegTrashAlt />
+                                  </button>
+                                </div>
                               )}
                             </div>
                           )}

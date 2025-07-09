@@ -8,7 +8,21 @@ export function useUserRole() {
   if (!token) return null;
   try {
     const payload = JSON.parse(atob(token.split('.')[1]));
-    return payload.role;
+    console.log('JWT payload:', payload);
+    // Support both role and roleId (for legacy and new tokens)
+    if (payload.role) return payload.role;
+    if (payload.roleId) {
+      // Map roleId to role name (adjust as per your roles table)
+      const roleMap: { [key: number]: string } = {
+        1: 'Admin',
+        2: 'Project Manager',
+        3: 'Developer',
+        4: 'Tester',
+      };
+      const roleIdNum = Number(payload.roleId);
+      return roleMap[roleIdNum] || null;
+    }
+    return null;
   } catch {
     return null;
   }

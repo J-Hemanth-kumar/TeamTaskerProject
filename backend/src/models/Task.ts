@@ -18,6 +18,13 @@ export class Task extends Model<Task> {
   @Column(DataType.DATE)
   deadline?: Date;
 
+
+  @Column(DataType.INTEGER)
+  developerId?: number;
+
+  @Column(DataType.INTEGER)
+  testerId?: number;
+
   @Column(DataType.INTEGER)
   assigneeId?: number;
 

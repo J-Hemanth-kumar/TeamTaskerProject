@@ -5,66 +5,130 @@ export default function UserMenuDrawer({ open, onClose }: { open: boolean; onClo
   const [showUsers, setShowUsers] = useState(false);
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [selectedRole, setSelectedRole] = useState<number | null>(null);
 
   useEffect(() => {
     if (showUsers && open) {
       setLoading(true);
       api.get('/users')
-        .then(res => setUsers(res.data))
+        .then(res => {
+          setUsers(res.data);
+          console.log('Fetched users:', res.data);
+        })
+        .catch(err => {
+          setUsers([]);
+          console.error('Error fetching users:', err);
+        })
         .finally(() => setLoading(false));
     }
   }, [showUsers, open]);
 
   // Group users by role
+  // Map roleId to display names
+  const roleDisplayMap: Record<number, string> = {
+    1: 'Admin',
+    2: 'Project Manager',
+    3: 'Developer',
+    4: 'Tester',
+    5: 'Viewer',
+  };
+  // Group users by roleId
   const grouped = users.reduce((acc: any, user: any) => {
-    if (!acc[user.role]) acc[user.role] = [];
-    acc[user.role].push(user);
+    const roleId = user.roleId;
+    if (!acc[roleId]) acc[roleId] = [];
+    acc[roleId].push(user);
     return acc;
   }, {});
+  // Only show roles in the dropdown that are in the map, in the desired order
+  const roleList = Object.keys(roleDisplayMap).map(Number);
+  console.log('Grouped users:', grouped);
 
   // Drawer below navbar (assume navbar is 56px tall)
   // The modal is rendered outside the drawer, so we use a portal approach
   return (
     <>
-      <div className={`fixed left-0 top-[56px] w-80 z-40 transition-transform ${open ? 'translate-x-0' : '-translate-x-full'} h-[calc(100vh-56px)]`} style={{ transition: 'transform 0.3s' }}>
-        <div className="bg-white shadow-xl h-full flex flex-col">
+      <div className={`fixed left-0 top-[56px] w-80 z-40 transition-transform ${open ? 'translate-x-0' : '-translate-x-full'} h-[calc(100vh-56px)] rounded-r-2xl`} style={{ transition: 'transform 0.3s' }}>
+        <div className="bg-white shadow-xl h-full flex flex-col rounded-r-2xl">
           <div className="flex items-center justify-between p-4 border-b">
-            <button
-              className="text-lg font-bold text-blue-700 hover:underline focus:outline-none"
-              onClick={() => setShowUsers(true)}
-            >
-              Users
-            </button>
+            <div className="relative">
+              <button
+                className="flex items-center gap-2 text-lg font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 shadow-sm px-4 py-2 rounded-lg transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                onClick={() => {
+                  setDropdownOpen((prev) => !prev);
+                  if (!users.length) {
+                    setLoading(true);
+                    api.get('/users')
+                      .then(res => {
+                        setUsers(res.data);
+                        setLoading(false);
+                      })
+                      .catch(() => {
+                        setUsers([]);
+                        setLoading(false);
+                      });
+                  }
+                }}
+                aria-haspopup="true"
+                aria-expanded={dropdownOpen}
+              >
+                <span>Users</span>
+                <svg className={`w-4 h-4 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+              </button>
+              {dropdownOpen && (
+                <div className="absolute left-0 mt-2 w-48 bg-white border border-blue-200 rounded-xl shadow-lg z-50 animate-fade-in">
+                  {loading ? (
+                    <div className="p-3 text-blue-500 text-center">Loading...</div>
+                  ) : (
+                    roleList.length === 0 ? (
+                      <div className="p-3 text-gray-400 text-center">No roles</div>
+                    ) : (
+                      <ul className="py-1">
+                        {roleList.map((roleId) => (
+                          <li key={roleId}>
+                            <button
+                              className="w-full text-left px-4 py-2 rounded-lg hover:bg-blue-100 text-blue-700 font-medium transition-colors duration-100"
+                              onClick={() => {
+                                setSelectedRole(roleId);
+                                setShowUsers(true);
+                                setDropdownOpen(false);
+                              }}
+                            >
+                              {roleDisplayMap[roleId]}
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )
+                  )}
+                </div>
+              )}
+            </div>
             <button className="text-2xl text-gray-500 hover:text-gray-700" onClick={onClose}>&times;</button>
           </div>
         </div>
       </div>
-      {/* Modal for user details, rendered centered and overshadowing dashboard */}
-      {showUsers && (
-        <div className="fixed inset-0 z-50 bg-black bg-opacity-40 flex items-center justify-center" onClick={() => setShowUsers(false)}>
+      {/* Modal for users of selected role */}
+      {showUsers && selectedRole !== null && (
+        <div className="fixed inset-0 z-50 bg-black bg-opacity-40 flex items-center justify-center" onClick={() => { setShowUsers(false); setSelectedRole(null); }}>
           <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-lg relative" onClick={e => e.stopPropagation()}>
-            <button className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-2xl" onClick={() => setShowUsers(false)}>&times;</button>
-            <h2 className="text-xl font-bold mb-4">All Users</h2>
+            <button className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-2xl" onClick={() => { setShowUsers(false); setSelectedRole(null); }}>&times;</button>
+            <h2 className="text-xl font-bold mb-4">{roleDisplayMap[selectedRole]} Users</h2>
             <div className="overflow-y-auto max-h-[60vh]">
               {loading ? (
                 <div className="text-center text-gray-500">Loading...</div>
               ) : (
-                Object.keys(grouped).length === 0 ? (
-                  <div className="text-center text-gray-500">No users found.</div>
+                grouped[selectedRole] && grouped[selectedRole].length > 0 ? (
+                  <ul className="space-y-2">
+                    {grouped[selectedRole].map((user: any) => (
+                      <li key={user.id} className="flex flex-col bg-blue-50 rounded p-2 border border-blue-100">
+                        <span className="font-medium text-gray-800">{user.name}</span>
+                        <span className="text-xs text-gray-500">{user.email}</span>
+                      </li>
+                    ))}
+                  </ul>
                 ) : (
-                  Object.entries(grouped).map(([role, users]: any) => (
-                    <div key={role} className="mb-6">
-                      <div className="font-semibold text-blue-700 mb-2 text-base border-b pb-1">{role}</div>
-                      <ul className="space-y-2">
-                        {users.map((user: any) => (
-                          <li key={user.id} className="flex flex-col bg-blue-50 rounded p-2 border border-blue-100">
-                            <span className="font-medium text-gray-800">{user.name}</span>
-                            <span className="text-xs text-gray-500">{user.email}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  ))
+                  <div className="text-center text-gray-500">No users found for this role.</div>
                 )
               )}
             </div>

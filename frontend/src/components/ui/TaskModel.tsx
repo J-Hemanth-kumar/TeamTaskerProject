@@ -2,28 +2,55 @@ import React, { useState, useEffect } from 'react';
 import { fetchProjects } from '../../lib/ProjectApi';
 import api from '../../lib/api';
 
+
 function SearchableDropdown({ options, value, onChange, placeholder }: { options: any[], value: string, onChange: (v: string) => void, placeholder: string }) {
   const [search, setSearch] = useState('');
-  const filtered = options.filter(opt => (opt.name || opt.username || '').toLowerCase().includes(search.toLowerCase()));
+  const [showOptions, setShowOptions] = useState(false);
+  const filtered = options.filter(opt => ((opt.name || opt.username || '').toLowerCase().includes(search.toLowerCase())));
+  const getDisplayName = (opt: any) => {
+    if (opt.name && opt.username && opt.name !== opt.username) return `${opt.name} (${opt.username})`;
+    return opt.name || opt.username || '';
+  };
+  const handleSelect = (id: string, _name: string, opt: any) => {
+    onChange(id);
+    setSearch(getDisplayName(opt));
+    setShowOptions(false);
+  };
+  useEffect(() => {
+    if (!value) setSearch('');
+    else {
+      const selected = options.find(opt => String(opt.id) === String(value));
+      if (selected) setSearch(getDisplayName(selected));
+    }
+  }, [value, options]);
   return (
     <div className="mb-3 w-full relative">
       <input
         type="text"
         value={search}
-        onChange={e => setSearch(e.target.value)}
+        onChange={e => {
+          setSearch(e.target.value);
+          setShowOptions(true);
+        }}
         placeholder={placeholder}
         className="w-full px-3 py-2 border rounded mb-1"
+        onFocus={() => setShowOptions(true)}
+        autoComplete="off"
       />
-      <select
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        className="w-full px-3 py-2 border rounded"
-      >
-        <option value="">{placeholder}</option>
-        {filtered.map((user: any) => (
-          <option key={user.id} value={user.id}>{user.name || user.username}</option>
-        ))}
-      </select>
+      {showOptions && (
+        <div className="absolute z-10 bg-white border rounded w-full max-h-40 overflow-y-auto shadow">
+          {filtered.length === 0 && <div className="p-2 text-gray-400">No results</div>}
+          {filtered.map((opt: any) => (
+            <div
+              key={opt.id}
+              className="p-2 hover:bg-blue-100 cursor-pointer"
+              onClick={() => handleSelect(String(opt.id), getDisplayName(opt), opt)}
+            >
+              {getDisplayName(opt)}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

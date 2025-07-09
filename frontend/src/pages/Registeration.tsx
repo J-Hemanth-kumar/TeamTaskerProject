@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import api from '../lib/api';
+import { useNotification } from '../context/NotificationContext';
 
 export default function RegisterPage({ onRegister }: { onRegister: () => void }) {
   const [email, setEmail] = useState('');
@@ -8,14 +9,26 @@ export default function RegisterPage({ onRegister }: { onRegister: () => void })
   const [roleId, setRoleId] = useState(2); // Default to Developer
   const [error, setError] = useState('');
 
+  const { addNotification } = useNotification();
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     try {
       await api.post('/auth/register', { email, password, name, roleId });
+      addNotification('Registration successful. Please login.');
       onRegister();
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Registration failed');
+      // Show backend error details if available
+      const backendMsg = err.response?.data?.error;
+      const backendDetails = err.response?.data?.details;
+      if (backendMsg && backendDetails) {
+        setError(`${backendMsg}: ${typeof backendDetails === 'string' ? backendDetails : JSON.stringify(backendDetails)}`);
+      } else if (backendMsg) {
+        setError(backendMsg);
+      } else {
+        setError('Registration failed');
+      }
     }
   };
 
@@ -53,9 +66,11 @@ export default function RegisterPage({ onRegister }: { onRegister: () => void })
           onChange={e => setRoleId(Number(e.target.value))}
           className="mb-6 w-full px-3 py-2 border rounded"
         >
-          <option value={2}>Developer</option>
-          <option value={3}>Tester</option>
-          <option value={4}>Viewer</option>
+          <option value={1}>Admin</option>
+          <option value={2}>Project Manager</option>
+          <option value={3}>Developer</option>
+          <option value={4}>Tester</option>
+          <option value={5}>Viewer</option>
         </select>
         <button type="submit" className="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700">Register</button>
       </form>

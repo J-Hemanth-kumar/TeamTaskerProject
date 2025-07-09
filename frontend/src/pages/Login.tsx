@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import api from '../lib/api';
+import { useNotification } from '../context/NotificationContext';
 
 export default function LoginPage({ onLogin }: { onLogin: () => void }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+
+  const { addNotification } = useNotification();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -12,6 +15,7 @@ export default function LoginPage({ onLogin }: { onLogin: () => void }) {
     try {
       const res = await api.post('/auth/login', { email, password });
       localStorage.setItem('token', res.data.token);
+      addNotification('Login successful!');
       onLogin();
     } catch (err: any) {
       setError(err.response?.data?.error || 'Login failed');
@@ -40,6 +44,10 @@ export default function LoginPage({ onLogin }: { onLogin: () => void }) {
           required
         />
         <button type="submit" className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-lg font-semibold shadow hover:from-blue-700 hover:to-purple-700 transition-all">Login</button>
+        <div className="mt-4 text-center">
+          <span className="text-gray-600">Don't have an account? </span>
+          <a href="/register" className="text-blue-600 hover:underline">Register</a>
+        </div>
         <div className="mt-6 text-center text-gray-500 text-xs">Team Tasker &copy; 2025</div>
       </form>
       <style>{`

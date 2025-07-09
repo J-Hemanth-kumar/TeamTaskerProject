@@ -9,16 +9,16 @@ const router = Router();
 router.get('/', authenticateJWT, async (req, res) => {
   try {
     const users = await User.findAll({
-      include: [{ model: Role, attributes: ['name'] }],
-      attributes: ['id', 'name', 'username', 'email', 'roleId'],
+      include: [{ model: Role, as: 'role', attributes: ['name', 'id'] }],
+      attributes: ['id', 'name', 'email', 'roleId'],
     });
-    // Flatten role name for frontend
+    // Return both roleId and role name for frontend
     const result = users.map((u: any) => ({
       id: u.id,
       name: u.name,
-      username: u.username,
       email: u.email,
-      role: u.Role?.name || '',
+      role: u.role?.name || '',
+      roleId: u.roleId,
     }));
     res.json(result);
   } catch (err) {
@@ -29,19 +29,11 @@ router.get('/', authenticateJWT, async (req, res) => {
 // Get all developers
 router.get('/developers', authenticateJWT, async (req, res) => {
   try {
-    const users = await User.findAll({
-      include: [{ model: Role, attributes: ['name'] }],
-      attributes: ['id', 'name', 'username', 'email', 'roleId'],
+    const developers = await User.findAll({
+      where: { roleId: 3 }, // 3 = Developer
+      attributes: ['id', 'name', 'email', 'roleId'],
     });
-    const developers = users.filter((u: any) => u.Role?.name === 'Developer');
-    const result = developers.map((u: any) => ({
-      id: u.id,
-      name: u.name,
-      username: u.username,
-      email: u.email,
-      role: u.Role?.name || '',
-    }));
-    res.json(result);
+    res.json(developers);
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch developers' });
   }
@@ -50,19 +42,11 @@ router.get('/developers', authenticateJWT, async (req, res) => {
 // Get all testers
 router.get('/testers', authenticateJWT, async (req, res) => {
   try {
-    const users = await User.findAll({
-      include: [{ model: Role, attributes: ['name'] }],
-      attributes: ['id', 'name', 'username', 'email', 'roleId'],
+    const testers = await User.findAll({
+      where: { roleId: 4 }, // 4 = Tester
+      attributes: ['id', 'name', 'email', 'roleId'],
     });
-    const testers = users.filter((u: any) => u.Role?.name === 'Tester');
-    const result = testers.map((u: any) => ({
-      id: u.id,
-      name: u.name,
-      username: u.username,
-      email: u.email,
-      role: u.Role?.name || '',
-    }));
-    res.json(result);
+    res.json(testers);
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch testers' });
   }

@@ -9,9 +9,13 @@ export function setupAssociations() {
   Role.hasMany(User, { foreignKey: 'roleId', as: 'users' });
   User.belongsTo(Role, { foreignKey: 'roleId', as: 'role' });
 
-  // User ↔ Tasks
+  // User ↔ Tasks (assignee, developer, tester)
   User.hasMany(Task, { foreignKey: 'assigneeId', as: 'tasks' });
   Task.belongsTo(User, { foreignKey: 'assigneeId', as: 'assignee' });
+  User.hasMany(Task, { foreignKey: 'developerId', as: 'developerTasks' });
+  Task.belongsTo(User, { foreignKey: 'developerId', as: 'developer' });
+  User.hasMany(Task, { foreignKey: 'testerId', as: 'testerTasks' });
+  Task.belongsTo(User, { foreignKey: 'testerId', as: 'tester' });
 
   // Project ↔ Tasks
   Project.hasMany(Task, { foreignKey: 'projectId', as: 'tasks' });
