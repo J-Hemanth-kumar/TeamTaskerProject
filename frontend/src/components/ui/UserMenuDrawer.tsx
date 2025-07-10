@@ -48,12 +48,12 @@ export default function UserMenuDrawer({ open, onClose }: { open: boolean; onClo
   // The modal is rendered outside the drawer, so we use a portal approach
   return (
     <>
-      <div className={`fixed left-0 top-[56px] w-80 z-40 transition-transform ${open ? 'translate-x-0' : '-translate-x-full'} h-[calc(100vh-56px)] rounded-r-2xl`} style={{ transition: 'transform 0.3s' }}>
-        <div className="bg-white shadow-xl h-full flex flex-col rounded-r-2xl">
+      <div className={`fixed left-0 top-[56px] w-80 max-w-full z-40 transition-transform ${open ? 'translate-x-0' : '-translate-x-full'} h-[calc(100vh-56px)] rounded-r-2xl`} style={{ transition: 'transform 0.3s', width: '320px' }}>
+          <div className="bg-white shadow-xl h-full flex flex-col rounded-r-2xl" style={{ width: '320px', maxWidth: '100%' }}>
           <div className="flex items-center justify-between p-4 border-b">
-            <div className="relative">
-              <button
-                className="flex items-center gap-2 text-lg font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 shadow-sm px-4 py-2 rounded-lg transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            <div className="relative w-full">
+              <div
+                className={`w-full bg-blue-50 rounded-lg border border-blue-100 shadow-inner transition-all duration-150 ${dropdownOpen ? 'ring-2 ring-blue-300' : ''}`}
                 onClick={() => {
                   setDropdownOpen((prev) => !prev);
                   if (!users.length) {
@@ -71,47 +71,51 @@ export default function UserMenuDrawer({ open, onClose }: { open: boolean; onClo
                 }}
                 aria-haspopup="true"
                 aria-expanded={dropdownOpen}
+                style={{ cursor: 'pointer', width: '100%' }}
               >
-                <span>Users</span>
-                <svg className={`w-4 h-4 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
-              </button>
-              {dropdownOpen && (
-                <div className="absolute left-0 mt-2 w-48 bg-white border border-blue-200 rounded-xl shadow-lg z-50 animate-fade-in">
-                  {loading ? (
-                    <div className="p-3 text-blue-500 text-center">Loading...</div>
-                  ) : (
-                    roleList.length === 0 ? (
-                      <div className="p-3 text-gray-400 text-center">No roles</div>
-                    ) : (
-                      <ul className="py-1">
-                        {roleList.map((roleId) => (
-                          <li key={roleId}>
-                            <button
-                              className="w-full text-left px-4 py-2 rounded-lg hover:bg-blue-100 text-blue-700 font-medium transition-colors duration-100"
-                              onClick={() => {
-                                setSelectedRole(roleId);
-                                setShowUsers(true);
-                                setDropdownOpen(false);
-                              }}
-                            >
-                              {roleDisplayMap[roleId]}
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                    )
-                  )}
+                <div className="flex items-center justify-between px-4 py-3 select-none w-full">
+                  <span className="text-lg font-semibold text-blue-700">Users</span>
+                  <svg className={`w-4 h-4 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
                 </div>
-              )}
+                {dropdownOpen && (
+                  <div className="w-full border-t border-blue-100">
+                    {loading ? (
+                      <div className="p-3 text-blue-500 text-center">Loading...</div>
+                    ) : (
+                      roleList.length === 0 ? (
+                        <div className="p-3 text-gray-400 text-center">No roles</div>
+                      ) : (
+                        <ul className="py-1 w-full">
+                          {roleList.map((roleId) => (
+                            <li key={roleId} className="w-full">
+                              <div
+                                className="w-full px-4 py-2 rounded-lg hover:bg-blue-100 text-blue-700 font-medium transition-colors duration-100 cursor-pointer"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedRole(roleId);
+                                  setShowUsers(true);
+                                  setDropdownOpen(false);
+                                }}
+                              >
+                                {roleDisplayMap[roleId]}
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      )
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
-            <button className="text-2xl text-gray-500 hover:text-gray-700" onClick={onClose}>&times;</button>
+            {/* Removed X button, closing handled by HamburgerIcon */}
           </div>
         </div>
       </div>
       {/* Modal for users of selected role */}
       {showUsers && selectedRole !== null && (
         <div className="fixed inset-0 z-50 bg-black bg-opacity-40 flex items-center justify-center" onClick={() => { setShowUsers(false); setSelectedRole(null); }}>
-          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-lg relative" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-lg shadow-lg p-6 w-80 max-w-full relative" style={{ width: '320px' }} onClick={e => e.stopPropagation()}>
             <button className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-2xl" onClick={() => { setShowUsers(false); setSelectedRole(null); }}>&times;</button>
             <h2 className="text-xl font-bold mb-4">{roleDisplayMap[selectedRole]} Users</h2>
             <div className="overflow-y-auto max-h-[60vh]">

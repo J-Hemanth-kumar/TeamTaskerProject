@@ -37,9 +37,9 @@ export default function Navbar({
       <nav className="w-full bg-gray-900 text-white flex items-center justify-between px-6 py-3 shadow relative">
         <div className="flex items-center gap-3 min-w-[180px]">
           <button
-            className="focus:outline-none mr-2"
-            aria-label="Open user menu drawer"
-            onClick={() => setDrawerOpen(true)}
+            className={`focus:outline-none mr-2 ${drawerOpen ? 'text-yellow-400' : ''}`}
+            aria-label="Toggle user menu drawer"
+            onClick={() => setDrawerOpen((open) => !open)}
           >
             <HamburgerIcon className="hover:text-yellow-400 transition" />
           </button>
