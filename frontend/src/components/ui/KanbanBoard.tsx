@@ -2,6 +2,9 @@ import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea
 import { useUserRole } from '../../lib/Utils';
 import TaskModal from './TaskModel';
 import React, { useState } from 'react';
+import { useUsers } from '../../lib/Utils';
+import { useProjects, useCreateProject } from '../../lib/ProjectApi';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../lib/api';
 import { FaRegTrashAlt } from 'react-icons/fa';
 
@@ -26,55 +29,70 @@ export default function KanbanBoard({ tasks, onTaskCreated }: { tasks: any[], on
   const [editTask, setEditTask] = useState<any>(null);
   const [localTasks, setLocalTasks] = useState(tasks);
   const [selectedProject, setSelectedProject] = useState<string>('');
-  const [projects, setProjects] = useState<any[]>([]);
-  const [users, setUsers] = useState<any[]>([]);
+  const { data: projects = [] } = useProjects();
+  const { data: users = [] } = useUsers();
+  const queryClient = useQueryClient();
 
   React.useEffect(() => {
     setLocalTasks(tasks);
   }, [tasks]);
 
-  React.useEffect(() => {
-    // Fetch projects for heading
-    import('../../lib/ProjectApi').then(({ fetchProjects }) => {
-      fetchProjects().then(setProjects);
-    });
-    // Fetch users for assignee display
-    api.get('/users').then(res => setUsers(res.data)).catch(() => setUsers([]));
-  }, []);
+  // Projects and users are now fetched via React Query hooks
 
-  const handleCreate = async (task: any) => {
-    try {
-      await api.post('/tasks', task);
+  const createTaskMutation = useMutation({
+    mutationFn: async (task: any) => {
+      const res = await api.post('/tasks', task);
+      return res.data;
+    },
+    onSuccess: () => {
       setShowModal(false);
       if (onTaskCreated) onTaskCreated();
-    } catch (err) {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+    },
+    onError: () => {
       alert('Failed to create task');
     }
+  });
+  const handleCreate = (task: any) => {
+    createTaskMutation.mutate(task);
   };
 
-  const handleEdit = async (task: any, optimistic?: boolean) => {
-    // Optimistic update: update localTasks immediately if requested
+  const editTaskMutation = useMutation({
+    mutationFn: async (task: any) => {
+      const res = await api.put(`/tasks/${task.id}`, task);
+      return res.data;
+    },
+    onSuccess: () => {
+      setEditTask(null);
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+    },
+    onError: () => {
+      alert('Failed to update task');
+    }
+  });
+  const handleEdit = (task: any, optimistic?: boolean) => {
     if (optimistic) {
       setLocalTasks(prev => prev.map(t => t.id === task.id ? { ...t, ...task } : t));
     }
-    try {
-      await api.put(`/tasks/${task.id}`, task);
-      setEditTask(null);
-      // Don't call onTaskCreated for drag/drop, let socket update handle it
-    } catch (err) {
-      alert('Failed to update task');
-      // Optionally: revert optimistic update here
-    }
+    editTaskMutation.mutate(task);
   };
 
-  const handleDelete = async (taskId: number) => {
-    if (!window.confirm('Are you sure you want to delete this task?')) return;
-    try {
-      await api.delete(`/tasks/${taskId}`);
+  const deleteTaskMutation = useMutation({
+    mutationFn: async (taskId: number) => {
+      const res = await api.delete(`/tasks/${taskId}`);
+      return res.data;
+    },
+    onSuccess: () => {
       if (onTaskCreated) onTaskCreated();
-    } catch (err) {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+    },
+    onError: () => {
       alert('Failed to delete task');
     }
+  });
+  const handleDelete = (taskId: number) => {
+    if (!window.confirm('Are you sure you want to delete this task?')) return;
+    deleteTaskMutation.mutate(taskId);
   };
 
   const onDragEnd = async (result: DropResult) => {

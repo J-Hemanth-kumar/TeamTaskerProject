@@ -1,26 +1,28 @@
 import React, { useState } from 'react';
-import { createProject } from '../../lib/ProjectApi';
+import { useCreateProject } from '../../lib/ProjectApi';
 
 export default function ProjectCreateForm({ onProjectCreated }: { onProjectCreated: () => void }) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const createProjectMutation = useCreateProject();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     setError('');
-    try {
-      await createProject({ name, description });
-      setName('');
-      setDescription('');
-      onProjectCreated();
-    } catch (err: any) {
-      setError(err?.message || 'Failed to create project');
-    } finally {
-      setLoading(false);
-    }
+    createProjectMutation.mutate(
+      { name, description },
+      {
+        onSuccess: () => {
+          setName('');
+          setDescription('');
+          onProjectCreated();
+        },
+        onError: (err: any) => {
+          setError(err?.message || 'Failed to create project');
+        },
+      }
+    );
   };
 
   return (
@@ -44,9 +46,9 @@ export default function ProjectCreateForm({ onProjectCreated }: { onProjectCreat
       <button
         type="submit"
         className="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700"
-        disabled={loading}
+        disabled={createProjectMutation.status === 'pending'}
       >
-        {loading ? 'Creating...' : 'Create Project'}
+        {createProjectMutation.status === 'pending' ? 'Creating...' : 'Create Project'}
       </button>
     </form>
   );

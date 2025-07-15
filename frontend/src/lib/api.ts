@@ -15,4 +15,5 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+// For React Query, you can still use this api instance in your query/mutation functions
 export default api;

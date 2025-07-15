@@ -2,6 +2,20 @@ export function cn(...classes: (string | undefined | null | false)[]) {
   return classes.filter(Boolean).join(' ');
 }
 
+// Example React Query usage for users (can be moved to a dedicated file)
+import { useQuery } from '@tanstack/react-query';
+import api from './api';
+
+export function useUsers() {
+  return useQuery({
+    queryKey: ['users'],
+    queryFn: async () => {
+      const res = await api.get('/users');
+      return res.data;
+    },
+  });
+}
+
 export function useUserRole() {
   // Example: decode JWT to get role, or fetch from backend
   const token = localStorage.getItem('token');

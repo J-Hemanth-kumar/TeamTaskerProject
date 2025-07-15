@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import api from '../lib/api';
+import { useMutation } from '@tanstack/react-query';
 import { useNotification } from '../context/NotificationContext';
 
 export default function LoginPage({ onLogin }: { onLogin: () => void }) {
@@ -9,17 +10,25 @@ export default function LoginPage({ onLogin }: { onLogin: () => void }) {
 
   const { addNotification } = useNotification();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    try {
+  const loginMutation = useMutation({
+    mutationFn: async ({ email, password }: { email: string; password: string }) => {
       const res = await api.post('/auth/login', { email, password });
-      localStorage.setItem('token', res.data.token);
+      return res.data;
+    },
+    onSuccess: (data) => {
+      localStorage.setItem('token', data.token);
       addNotification('Login successful!');
       onLogin();
-    } catch (err: any) {
+    },
+    onError: (err: any) => {
       setError(err.response?.data?.error || 'Login failed');
-    }
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    loginMutation.mutate({ email, password });
   };
 
   return (
@@ -43,7 +52,13 @@ export default function LoginPage({ onLogin }: { onLogin: () => void }) {
           className="mb-6 w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
           required
         />
-        <button type="submit" className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-lg font-semibold shadow hover:from-blue-700 hover:to-purple-700 transition-all">Login</button>
+        <button
+          type="submit"
+          className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-lg font-semibold shadow hover:from-blue-700 hover:to-purple-700 transition-all"
+          disabled={loginMutation.status === 'pending'}
+        >
+          {loginMutation.status === 'pending' ? 'Logging in...' : 'Login'}
+        </button>
         <div className="mt-4 text-center">
           <span className="text-gray-600">Don't have an account? </span>
           <a href="/register" className="text-blue-600 hover:underline">Register</a>

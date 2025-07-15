@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import api from '../lib/api';
+import { useMutation } from '@tanstack/react-query';
 import { useNotification } from '../context/NotificationContext';
 
 export default function RegisterPage({ onRegister }: { onRegister: () => void }) {
@@ -11,15 +12,16 @@ export default function RegisterPage({ onRegister }: { onRegister: () => void })
 
   const { addNotification } = useNotification();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    try {
-      await api.post('/auth/register', { email, password, name, roleId });
+  const registerMutation = useMutation({
+    mutationFn: async ({ email, password, name, roleId }: { email: string; password: string; name: string; roleId: number }) => {
+      const res = await api.post('/auth/register', { email, password, name, roleId });
+      return res.data;
+    },
+    onSuccess: () => {
       addNotification('Registration successful. Please login.');
       onRegister();
-    } catch (err: any) {
-      // Show backend error details if available
+    },
+    onError: (err: any) => {
       const backendMsg = err.response?.data?.error;
       const backendDetails = err.response?.data?.details;
       if (backendMsg && backendDetails) {
@@ -29,7 +31,13 @@ export default function RegisterPage({ onRegister }: { onRegister: () => void })
       } else {
         setError('Registration failed');
       }
-    }
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    registerMutation.mutate({ email, password, name, roleId });
   };
 
   return (
@@ -72,7 +80,13 @@ export default function RegisterPage({ onRegister }: { onRegister: () => void })
           <option value={4}>Tester</option>
           <option value={5}>Viewer</option>
         </select>
-        <button type="submit" className="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700">Register</button>
+        <button
+          type="submit"
+          className="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700"
+          disabled={registerMutation.status === 'pending'}
+        >
+          {registerMutation.status === 'pending' ? 'Registering...' : 'Register'}
+        </button>
       </form>
     </div>
   );

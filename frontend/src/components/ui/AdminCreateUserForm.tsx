@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { fetchProjects } from '../../lib/ProjectApi';
+import { useProjects } from '../../lib/ProjectApi';
+import { useMutation } from '@tanstack/react-query';
+import api from '../../lib/api';
 
 const roles = [
   { id: 1, name: 'Admin' },
@@ -15,35 +16,38 @@ export default function AdminCreateUserForm({ token, onUserCreated }: { token: s
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [projects, setProjects] = useState<any[]>([]);
+  const { data: projects = [] } = useProjects();
 
-  useEffect(() => {
-    fetchProjects().then(setProjects).catch(() => setProjects([]));
-  }, []);
+  // Projects are now fetched via React Query
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-    setSuccess('');
-    try {
-      await axios.post(
-        'http://localhost:5000/api/auth/admin/create-user',
+  const createUserMutation = useMutation({
+    mutationFn: async (form: any) => {
+      const res = await api.post(
+        '/auth/admin/create-user',
         { ...form, roleId: Number(form.roleId), projectId: form.projectId ? Number(form.projectId) : undefined },
         { headers: { Authorization: `Bearer ${token}` } }
       );
+      return res.data;
+    },
+    onSuccess: () => {
       setSuccess('User created successfully!');
       setForm({ name: '', email: '', password: '', roleId: '', projectId: '' });
       if (onUserCreated) onUserCreated();
-    } catch (err: any) {
+    },
+    onError: (err: any) => {
       setError(err.response?.data?.error || 'Failed to create user');
-    } finally {
-      setLoading(false);
-    }
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
+    createUserMutation.mutate(form);
   };
 
   return (
@@ -112,7 +116,7 @@ export default function AdminCreateUserForm({ token, onUserCreated }: { token: s
             onChange={handleChange}
           >
             <option value="">(Optional)</option>
-            {projects.map((project) => (
+            {projects.map((project: any) => (
               <option key={project.id} value={project.id}>{project.name}</option>
             ))}
           </select>
@@ -121,9 +125,9 @@ export default function AdminCreateUserForm({ token, onUserCreated }: { token: s
       <button
         type="submit"
         className="w-full mt-6 bg-blue-600 text-white py-2 rounded-lg font-semibold text-lg shadow hover:bg-blue-700 transition"
-        disabled={loading}
+        disabled={createUserMutation.status === 'pending'}
       >
-        {loading ? 'Creating...' : 'Create User'}
+        {createUserMutation.status === 'pending' ? 'Creating...' : 'Create User'}
       </button>
     </form>
   );

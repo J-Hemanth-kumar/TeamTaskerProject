@@ -1,28 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import api from '../../lib/api';
+import { useUsers } from '../../lib/Utils';
 
 export default function UserMenuDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [showUsers, setShowUsers] = useState(false);
-  const [users, setUsers] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: users = [], isLoading: loading } = useUsers();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [selectedRole, setSelectedRole] = useState<number | null>(null);
 
-  useEffect(() => {
-    if (showUsers && open) {
-      setLoading(true);
-      api.get('/users')
-        .then(res => {
-          setUsers(res.data);
-          console.log('Fetched users:', res.data);
-        })
-        .catch(err => {
-          setUsers([]);
-          console.error('Error fetching users:', err);
-        })
-        .finally(() => setLoading(false));
-    }
-  }, [showUsers, open]);
+  // Users are now fetched via React Query hook
 
   // Group users by role
   // Map roleId to display names
@@ -56,18 +41,7 @@ export default function UserMenuDrawer({ open, onClose }: { open: boolean; onClo
                 className={`w-full bg-blue-50 rounded-lg border border-blue-100 shadow-inner transition-all duration-150 ${dropdownOpen ? 'ring-2 ring-blue-300' : ''}`}
                 onClick={() => {
                   setDropdownOpen((prev) => !prev);
-                  if (!users.length) {
-                    setLoading(true);
-                    api.get('/users')
-                      .then(res => {
-                        setUsers(res.data);
-                        setLoading(false);
-                      })
-                      .catch(() => {
-                        setUsers([]);
-                        setLoading(false);
-                      });
-                  }
+                  // No need to fetch users manually; handled by React Query
                 }}
                 aria-haspopup="true"
                 aria-expanded={dropdownOpen}

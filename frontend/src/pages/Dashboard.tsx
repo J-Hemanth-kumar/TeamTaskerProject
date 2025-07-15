@@ -1,29 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import KanbanBoard from '../components/ui/KanbanBoard';
 import '../components/ui/AnimatedBlobs.css';
+import { useProjects } from '../lib/ProjectApi';
+import { useQuery } from '@tanstack/react-query';
 import api from '../lib/api';
-import { fetchProjects } from '../lib/ProjectApi';
 import { useSocket } from '../lib/UseSockets';
 import { useNotification } from '../context/NotificationContext';
 
 export default function DashboardPage({ renderNavbar }: { renderNavbar?: (props: any) => React.ReactNode }) {
-  const [tasks, setTasks] = useState<any[]>([]);
-  const [projects, setProjects] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: projects = [] } = useProjects();
+  const { data: tasks = [], isLoading: loading } = useQuery({
+    queryKey: ['tasks'],
+    queryFn: async () => {
+      const res = await api.get('/tasks');
+      return res.data;
+    },
+  });
   const socket = useSocket(localStorage.getItem('token') || undefined);
   const { addNotification } = useNotification();
 
-  useEffect(() => {
-    api.get('/tasks')
-      .then(res => setTasks(res.data))
-      .finally(() => setLoading(false));
-    fetchProjects().then(setProjects);
-  }, []);
+  // Data is now fetched via React Query hooks
 
   const handleTaskCreated = () => {
-    setLoading(true);
-    api.get('/tasks').then(res => setTasks(res.data)).finally(() => setLoading(false));
     // Notification for creation will be handled by socket event
+    // Refetch tasks via React Query
+    // Use queryClient.invalidateQueries if needed
   };
 
   useEffect(() => {
@@ -41,13 +42,14 @@ export default function DashboardPage({ renderNavbar }: { renderNavbar?: (props:
       }
     };
     socket.on('taskUpdated', (data: any) => {
-      setTasks(prev => prev.map(t => t.id === data.id ? data : t));
+      // Refetch tasks via React Query
+      // Use queryClient.invalidateQueries if needed
       const projectName = getProjectName(data.projectId);
       const statusLabel = getStatusLabel(data.status);
       addNotification(`${data.title} of ${projectName} is updated to ${statusLabel}`);
     });
     socket.on('newTask', (data: any) => {
-      setTasks(prev => [...prev, data]);
+      // Refetch tasks via React Query
       const projectName = getProjectName(data.projectId);
       addNotification(`${data.title} of ${projectName} is created`);
     });

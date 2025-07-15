@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { fetchProjects } from '../../lib/ProjectApi';
+import { useProjects } from '../../lib/ProjectApi';
+import { useQuery } from '@tanstack/react-query';
 import api from '../../lib/api';
 
 
@@ -61,17 +62,25 @@ export default function TaskModal({ open, onClose, onCreate }: { open: boolean, 
   const [status, setStatus] = useState('todo');
   const [deadline, setDeadline] = useState('');
   const [projectId, setProjectId] = useState('');
-  const [projects, setProjects] = useState<any[]>([]);
-  const [developers, setDevelopers] = useState<any[]>([]);
-  const [testers, setTesters] = useState<any[]>([]);
+  const { data: projects = [] } = useProjects();
+  const { data: developers = [] } = useQuery({
+    queryKey: ['users', 'developers'],
+    queryFn: async () => {
+      const res = await api.get('/users/developers');
+      return res.data;
+    },
+  });
+  const { data: testers = [] } = useQuery({
+    queryKey: ['users', 'testers'],
+    queryFn: async () => {
+      const res = await api.get('/users/testers');
+      return res.data;
+    },
+  });
   const [developerId, setDeveloperId] = useState('');
   const [testerId, setTesterId] = useState('');
 
-  useEffect(() => {
-    fetchProjects().then(setProjects).catch(() => setProjects([]));
-    api.get('/users/developers').then(res => setDevelopers(res.data)).catch(() => setDevelopers([]));
-    api.get('/users/testers').then(res => setTesters(res.data)).catch(() => setTesters([]));
-  }, []);
+  // Data is now fetched via React Query hooks
 
   if (!open) return null;
 
